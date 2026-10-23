@@ -12,11 +12,11 @@ This file provides essential information for AI coding agents working on this pr
 - **Language**: TypeScript 5.7
 - **Styling**: Tailwind CSS v4
 - **UI Components**: shadcn/ui (New York style)
-- **Authentication**: Clerk (with Organizations/Billing support)
-- **Error Tracking**: Sentry
 - **Charts**: Recharts
-- **Containerization**: Docker (Node.js & Bun Dockerfiles)
-- **Package Manager**: Bun (preferred) or npm
+- **Database**: PostgreSQL + Drizzle ORM (`src/lib/db`, migrations in `drizzle/`)
+- **Auth**: custom NRP + password sign-in, database sessions, roles admin / operator / viewer (`src/lib/auth`)
+- **Containerization**: Docker (Node.js Dockerfile)
+- **Package Manager**: npm >= 11.10 (`package-lock.json`; `.npmrc` enforces a 7-day `min-release-age`)
 
 The project follows a feature-based folder structure designed for scalability in SaaS applications, internal tools, and admin panels.
 
@@ -51,13 +51,6 @@ The project follows a feature-based folder structure designed for scalability in
 - `useMutation` + `invalidateQueries` for form submissions
 - Query client singleton in `src/lib/query-client.ts`
 
-### Authentication & Authorization
-
-- Clerk for authentication and user management
-- Clerk Organizations for multi-tenant workspaces
-- Clerk Billing for subscription management (B2B)
-- Client-side RBAC for navigation visibility
-
 ### Data & APIs
 
 - TanStack Table for data tables
@@ -82,18 +75,11 @@ The project follows a feature-based folder structure designed for scalability in
 ```
 /src
 ├── app/                    # Next.js App Router
-│   ├── auth/              # Authentication routes (sign-in, sign-up)
-│   ├── dashboard/         # Dashboard routes
+│   ├── auth/              # Sign-in and change-password pages
+│   ├── dashboard/         # Dashboard routes (layout loads the user via requireUser)
 │   │   ├── overview/      # Parallel routes (@area_stats, @bar_stats, etc.)
 │   │   ├── product/       # Product management pages
-│   │   ├── kanban/        # Kanban board page
-│   │   ├── chat/          # Messaging page
-│   │   ├── ai-chat/       # AI chat streaming demo
 │   │   ├── notifications/ # Notifications page
-│   │   ├── workspaces/    # Organization management
-│   │   ├── billing/       # Subscription billing
-│   │   ├── exclusive/     # Pro plan feature example
-│   │   └── profile/       # User profile
 │   ├── api/               # API routes (if any)
 │   ├── layout.tsx         # Root layout with providers
 │   ├── page.tsx           # Landing page
@@ -110,7 +96,7 @@ The project follows a feature-based folder structure designed for scalability in
 │   └── ...
 │
 ├── features/              # Feature-based modules
-│   ├── auth/              # Authentication components
+│   ├── auth/              # Sign-in / sign-out / change-password Server Actions + forms
 │   ├── overview/          # Dashboard analytics
 │   ├── products/          # Product management (React Query + nuqs)
 │   │   ├── api/
@@ -120,26 +106,24 @@ The project follows a feature-based folder structure designed for scalability in
 │   │   ├── components/    # Listing, form, table components
 │   │   ├── schemas/       # Zod schemas
 │   │   └── constants/     # Filter options
-│   ├── users/             # User management (React Query + nuqs)
-│   │   ├── api/           # Same pattern: types.ts → service.ts → queries.ts
+│   ├── users/             # Account management, admin only (React Query + nuqs)
+│   │   ├── api/           # Same pattern; service.ts = Server Actions + Drizzle
 │   │   └── components/    # Listing, table components
 │   ├── react-query-demo/  # React Query showcase (Pokemon API)
-│   ├── kanban/            # Kanban board with dnd-kit
-│   ├── chat/              # Messaging UI (conversations, bubbles, composer)
-│   ├── ai-chat/           # Scripted useChat streaming demo
 │   ├── notifications/     # Notification center & store
-│   └── profile/           # Profile management
 │
 ├── config/                # Configuration files
-│   ├── nav-config.ts      # Navigation with RBAC
+│   ├── nav-config.ts      # Navigation with role-based visibility
 │   └── ...
 │
 ├── hooks/                 # Custom React hooks
-│   ├── use-nav.ts         # RBAC navigation filtering
+│   ├── use-nav.ts         # Filters navigation by the current user's role
 │   ├── use-data-table.ts  # Data table state
 │   └── ...
 │
 ├── lib/                   # Utility functions
+│   ├── auth/              # dal.ts (requireUser/requireRole/authorize/guardRoute), session, password, roles
+│   ├── db/                # Drizzle client (index.ts) and schema (schema.ts)
 │   ├── utils.ts           # cn() and formatters
 │   ├── searchparams.ts    # Search param utilities
 │   └── ...
@@ -153,16 +137,13 @@ The project follows a feature-based folder structure designed for scalability in
     └── themes/            # Individual theme files
 
 /docs                      # Documentation
-│   ├── clerk_setup.md     # Clerk configuration guide
-│   ├── nav-rbac.md        # Navigation RBAC documentation
 │   └── themes.md          # Theme customization guide
 
 /scripts                   # Dev tooling
-    ├── cleanup.js         # Feature removal, run via `bun run cleanup` (templates in cleanup-templates/, typechecked)
+    ├── cleanup.js         # Feature removal, run via `npm run cleanup` (templates in cleanup-templates/, typechecked)
     └── cleanup-templates/ # Replacement files cleanup.js copies into the repo
 
 Dockerfile                 # Node.js production Dockerfile
-Dockerfile.bun             # Bun production Dockerfile
 .dockerignore              # Docker build exclusions
 ```
 
@@ -172,30 +153,36 @@ Dockerfile.bun             # Bun production Dockerfile
 
 ```bash
 # Install dependencies
-bun install
+npm install
 
 # Development server
-bun run dev          # Starts at http://localhost:3000
+npm run dev          # Starts at http://localhost:3000
 
 # Build for production
-bun run build
+npm run build
 
 # Start production server
-bun run start
+npm run start
 
 # Linting
-bun run lint         # Run ESLint
-bun run lint:fix     # Fix ESLint issues and format
-bun run lint:strict  # Zero warnings tolerance
+npm run lint         # Run ESLint
+npm run lint:fix     # Fix ESLint issues and format
+npm run lint:strict  # Zero warnings tolerance
 
-bun run typecheck    # tsc --noEmit
+npm run typecheck    # tsc --noEmit
 
 # Formatting
-bun run format       # Format with Prettier
-bun run format:check # Check formatting
+npm run format       # Format with Prettier
+npm run format:check # Check formatting
 
 # Git hooks
-bun run prepare      # Install Husky hooks
+npm run prepare      # Install Husky hooks
+
+# Database (reads DATABASE_URL from .env.local)
+npm run db:generate  # New SQL migration after editing src/lib/db/schema.ts
+npm run db:migrate   # Apply pending migrations
+npm run db:studio    # Browse data in Drizzle Studio
+npm run db:seed-admin # Create the first admin (ADMIN_NRP / ADMIN_NAME / ADMIN_PASSWORD or prompts)
 ```
 
 ---
@@ -203,33 +190,6 @@ bun run prepare      # Install Husky hooks
 ## Environment Configuration
 
 Copy `env.example.txt` to `.env.local` and configure:
-
-### Required for Authentication (Clerk)
-
-```env
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
-CLERK_SECRET_KEY=sk_...
-
-# Redirect URLs
-NEXT_PUBLIC_CLERK_SIGN_IN_URL="/auth/sign-in"
-NEXT_PUBLIC_CLERK_SIGN_UP_URL="/auth/sign-up"
-NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL="/dashboard/overview"
-NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL="/dashboard/overview"
-```
-
-### Optional for Error Tracking (Sentry)
-
-```env
-NEXT_PUBLIC_SENTRY_DSN=https://...@....ingest.sentry.io/...
-NEXT_PUBLIC_SENTRY_ORG=your-org
-NEXT_PUBLIC_SENTRY_PROJECT=your-project
-SENTRY_AUTH_TOKEN=sntrys_...
-NEXT_PUBLIC_SENTRY_DISABLED="false"  # Set to "true" to disable in dev
-```
-
-**Note**: Clerk supports "keyless mode" — run `npx clerk@latest init` to provision a development instance in seconds (no account needed; keys are written to `.env.local`).
-
----
 
 ## Code Style Guidelines
 
@@ -303,85 +263,51 @@ See `docs/themes.md` for detailed theming guide.
 
 ---
 
-## Navigation & RBAC System
+## Authentication & Roles
 
-### Navigation Configuration
+Custom auth, no third-party service. Users sign in with **NRP + password**; accounts are created by admins on the Users page (no public sign-up). The first admin comes from `npm run db:seed-admin`.
 
-Navigation is organized into groups in `src/config/nav-config.ts`:
+### How a request is checked
+
+1. **`src/proxy.ts`** — optimistic only: no session cookie → `/dashboard/**` redirects to `/auth/sign-in?next=…`, `/api/**` returns 401. It never validates the session.
+2. **Data Access Layer (`src/lib/auth/dal.ts`)** — the real check, against the `sessions` table:
+   - `getCurrentUser()` — cached per request (`React.cache`), returns `{ id, nrp, name, role, mustChangePassword }` or `null`
+   - `requireUser()` — pages/layouts: redirects to sign-in, or to `/auth/change-password` while a password change is pending
+   - `requireRole('admin', …)` — pages: redirects users without the role to the overview
+   - `authorize('admin', …)` — Server Actions: redirects when signed out, throws `Forbidden` without the role
+   - `guardRoute('admin', …)` — Route Handlers: returns a 401/403 `NextResponse`, or `null` when allowed
+3. **The dashboard layout** calls `requireUser()` and passes the user to `CurrentUserProvider` (`useCurrentUser()` on the client). Layouts don't re-render on client navigation, so **every page that shows protected data and every Server Action / Route Handler must do its own check** — never rely on the layout or a hidden menu item.
+
+Sessions: random token in the httpOnly `slc_session` cookie, only its SHA-256 hash in the database; 60-minute idle timeout (sliding), 12-hour absolute limit. Five wrong passwords lock sign-in for 15 minutes. Passwords are hashed with Node's `crypto.scrypt` (`src/lib/auth/password.ts`).
+
+No-database mode: `AUTH_DISABLED=true` in `.env.local` (`isAuthDisabled` in `src/lib/auth/mode.ts`) skips the proxy check and makes `getCurrentUser()` return a built-in admin `DEV_USER` without touching the database; the Users page shows a "needs a database" notice instead of the table. It only works in development — production builds always ignore it. Code that needs the database must not run in this mode.
+
+Rules:
+
+- Never import `@/lib/db`, `@/lib/auth/session` or `@/lib/auth/dal` from client components (they're `server-only`). Client code may import `@/lib/auth/roles` and `import type` from the DAL.
+- Server Actions return `{ ok: false, error }` for expected failures instead of throwing — thrown messages are hidden in production. Mutations unwrap them (see `src/features/users/api/mutations.ts`).
+- Never return `passwordHash` or lockout fields to the client; select explicit columns.
+- `src/lib/db/schema.ts` and `src/lib/auth/roles.ts` use relative imports only (drizzle-kit loads them without the `@/` alias).
+
+### Roles
+
+`admin`, `operator`, `viewer` (`src/lib/auth/roles.ts`). Admin manages accounts and sees every menu; operator may create and change data; viewer only reads. Check with `hasRole(role, ['admin', 'operator'])`.
+
+### Navigation visibility
+
+Items in `src/config/nav-config.ts` take an optional `access: { roles: Role[] }`; `useFilteredNavGroups` (sidebar, KBar) hides items the current role can't open:
 
 ```typescript
-import { NavGroup } from '@/types';
-
-export const navGroups: NavGroup[] = [
-  {
-    label: 'Overview',
-    items: [
-      {
-        title: 'Dashboard',
-        url: '/dashboard/overview',
-        icon: 'dashboard',
-        shortcut: ['d', 'd'],
-        items: [],
-        access: { requireOrg: true } // RBAC check
-      }
-    ]
-  }
-];
-```
-
-### Access Control Properties
-
-- `requireOrg: boolean` - Requires active organization
-- `permission: string` - Requires specific permission
-- `role: string` - Requires specific role
-- `plan: string` - Requires specific subscription plan
-- `feature: string` - Requires specific feature
-
-### Client-Side Filtering
-
-The `useFilteredNavItems()` hook in `src/hooks/use-nav.ts` filters navigation client-side using Clerk's `useOrganization()` and `useUser()` hooks. This is for UX only - actual security checks must happen server-side.
-
----
-
-## Authentication Patterns
-
-### Protected Routes
-
-Dashboard routes use Clerk's middleware pattern. Pages that require organization:
-
-```tsx
-import { auth } from '@clerk/nextjs';
-import { redirect } from 'next/navigation';
-
-export default async function Page() {
-  const { orgId } = await auth();
-  if (!orgId) redirect('/dashboard/workspaces');
-  // ...
+{
+  title: 'Users',
+  url: '/dashboard/users',
+  icon: 'teams',
+  items: [],
+  access: { roles: ['admin'] } // also guard the page with requireRole('admin')
 }
 ```
 
-### Plan/Feature Protection
-
-Use Clerk's `<Protect>` component for client-side:
-
-```tsx
-import { Protect } from '@clerk/nextjs';
-
-<Protect plan='pro' fallback={<UpgradePrompt />}>
-  <PremiumContent />
-</Protect>;
-```
-
-Use `has()` function for server-side checks:
-
-```tsx
-import { auth } from '@clerk/nextjs';
-
-const { has } = await auth();
-const hasFeature = has({ feature: 'premium_access' });
-```
-
----
+Hiding a menu item is UX only — always pair it with `requireRole()` on the page and `authorize()` in its Server Actions.
 
 ## Data Fetching Patterns
 
@@ -402,7 +328,7 @@ src/features/<name>/api/
 
 | Pattern                                            | How to implement                                                                            |
 | -------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| **Server Actions + ORM** (Prisma/Drizzle/Supabase) | Add `'use server'` at top of `service.ts`, call ORM directly                                |
+| **Server Actions + ORM** (Prisma/Drizzle/Supabase) | Add `'use server'` at top of `service.ts`, call ORM directly — live example: `features/users` |
 | **Route Handlers + ORM**                           | `service.ts` calls `/api/` routes via `apiClient`, route handlers call ORM                  |
 | **BFF** (Next.js proxies to Laravel/Go/etc.)       | `service.ts` calls `/api/` routes via `apiClient`, route handlers proxy to external backend |
 | **Direct external API** (frontend-only)            | `service.ts` calls external URL via `fetch()`                                               |
@@ -505,23 +431,8 @@ Tables use TanStack Table with React Query:
 
 ## Error Handling & Monitoring
 
-### Sentry Integration
-
-Sentry is configured for both client and server:
-
-- Client config: `src/instrumentation-client.ts`
-- Server config: `src/instrumentation.ts`
-- Global error: `src/app/global-error.tsx`
-
-To disable Sentry in development:
-
-```env
-NEXT_PUBLIC_SENTRY_DISABLED="true"
-```
-
 ### Error Boundaries
 
-- `global-error.tsx` - Catches all errors, reports to Sentry
 - Parallel route `error.tsx` files for specific sections
 
 ---
@@ -559,25 +470,16 @@ Canonical guide: [docs/deployment.md](./docs/deployment.md) (Vercel, production 
 
 Ensure these are set in your deployment platform:
 
-- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
-- `CLERK_SECRET_KEY`
 - All `NEXT_PUBLIC_*` variables for client-side access
-- `SENTRY_*` variables if using error tracking
+- `DATABASE_URL` (runtime only; `npm run build` doesn't need a database). Run `npm run db:migrate` against it before starting a new version.
 
 ### Docker
 
-Production-ready Dockerfiles are included:
-
-- `Dockerfile` — Node.js-based
-- `Dockerfile.bun` — Bun-based
-
-Both use `output: 'standalone'` in `next.config.ts`. Pass `NEXT_PUBLIC_*` vars as `--build-arg` at build time, and runtime secrets via `-e` at run time.
+A production-ready Node.js `Dockerfile` is included. It uses `output: 'standalone'` in `next.config.ts`. Pass `NEXT_PUBLIC_*` vars as `--build-arg` at build time, and runtime secrets via `-e` at run time.
 
 ### Build Considerations
 
 - Output: `standalone` (optimized for Docker/self-hosting)
-- Images: Configured for `api.slingacademy.com`, `img.clerk.com`, `clerk.com`
-- Sentry source maps uploaded automatically in CI
 
 ---
 
@@ -590,13 +492,8 @@ A single `scripts/cleanup.js` file handles removal of optional features:
 node scripts/cleanup.js --interactive
 
 # Remove specific features
-node scripts/cleanup.js clerk           # Remove auth/org/billing
-node scripts/cleanup.js kanban          # Remove kanban board
-node scripts/cleanup.js chat            # Remove messaging UI
-node scripts/cleanup.js ai-chat         # Remove AI chat demo
 node scripts/cleanup.js notifications   # Remove notification center
 node scripts/cleanup.js themes          # Keep one theme, remove rest
-node scripts/cleanup.js sentry          # Remove error tracking
 
 # Remove multiple at once
 node scripts/cleanup.js kanban chat notifications
@@ -684,11 +581,11 @@ Browse all available icons at `/dashboard/elements/icons` — a searchable grid 
 ### Adding a New Feature (End-to-End)
 
 1. Create `src/features/<name>/api/types.ts` — response types, filter types, mutation payloads
-2. Create `src/features/<name>/api/service.ts` — data access functions (mock by default)
+2. Create `src/features/<name>/api/service.ts` — data access functions (mock by default; with Drizzle: `'use server'` + `authorize()` first in every function)
 3. Create `src/features/<name>/api/queries.ts` — query key factory + `queryOptions`
-4. Create page route: `src/app/dashboard/<name>/page.tsx`
+4. Create page route: `src/app/dashboard/<name>/page.tsx` (call `requireUser()` or `requireRole()` at the top)
 5. Create feature components in `src/features/<name>/components/`
-6. Add navigation item in `src/config/nav-config.ts`
+6. Add navigation item in `src/config/nav-config.ts` (with `access: { roles }` if restricted)
 7. (Optional) Add route handlers in `src/app/api/<name>/` for REST API patterns
 8. (Optional) Register new icon in `src/components/icons.tsx`
 
@@ -696,7 +593,8 @@ Browse all available icons at `/dashboard/elements/icons` — a searchable grid 
 
 1. Create: `src/app/api/my-route/route.ts`
 2. Export HTTP method handlers: `GET`, `POST`, etc.
-3. For BFF pattern: proxy requests to your external backend
+3. Start each handler with `const denied = await guardRoute(); if (denied) return denied;`
+4. For BFF pattern: proxy requests to your external backend
 
 ### Adding a shadcn Component
 
@@ -719,31 +617,19 @@ See "Theming System" section above or `docs/themes.md`.
 - Ensure using Tailwind CSS v4 syntax (`@import 'tailwindcss'`)
 - Check `postcss.config.js` uses `@tailwindcss/postcss`
 
-**Clerk keyless mode popup**
-
-- Run `npx clerk@latest init` to provision a dev instance in seconds (no account needed)
-- It writes keys to `.env.local`; later you can claim application or set env variables
-
 **Theme not applying**
 
 - Check theme name matches in CSS `[data-theme]` and `theme.config.ts`
 - Verify theme CSS is imported in `theme.css`
-
-**Navigation items not showing**
-
-- Check `access` property in nav config
-- Verify user has required org/permission/role
 
 ---
 
 ## External Documentation
 
 - [Next.js App Router](https://nextjs.org/docs/app)
-- [Clerk Next.js SDK](https://clerk.com/docs/references/nextjs)
 - [shadcn/ui](https://ui.shadcn.com/docs)
 - [Tailwind CSS v4](https://tailwindcss.com/docs)
 - [TanStack Table](https://tanstack.com/table/latest)
-- [Sentry Next.js](https://docs.sentry.io/platforms/javascript/guides/nextjs/)
 
 ---
 
@@ -761,3 +647,4 @@ See "Theming System" section above or `docs/themes.md`.
 10. **Forms** - Use `useAppForm` from `@/lib/form` with `form.AppField` rendering the shared field components (`field.TextField`, `field.SelectField`, …) from `@/components/forms/fields`. Each component follows the official shadcn TanStack Form anatomy; drop down to raw `form.Field` render props for one-off custom fields. Never use `useState` inside a render prop — extract stateful controls into components.
 11. **Button loading** - Use `<Button isLoading={isPending}>` for loading states. Uses CSS Grid overlap trick for zero layout shift. When `isLoading` is not passed, button behaves as default shadcn. `SubmitButton` in forms handles this automatically via form `isSubmitting` state.
 12. **Data layer** - Always go through the service layer: `types.ts` → `service.ts` → `queries.ts`. Components import types from `types.ts`, functions from `service.ts`, query options from `queries.ts`. Never import from `@/constants/mock-api*` directly in components.
+13. **Auth** - Every protected page calls `requireUser()`/`requireRole()`, every Server Action `authorize()`, every Route Handler `guardRoute()` (all from `@/lib/auth/dal`). Never rely on the proxy or a hidden menu item alone.

@@ -8,15 +8,12 @@ FROM node:${NODE_VERSION} AS dependencies
 
 WORKDIR /app
 
-# Install bun to use bun.lock for dependency resolution
-RUN npm install -g bun
-
 # Copy package-related files to leverage Docker cache
-COPY package.json bun.lock* ./
+COPY package.json package-lock.json .npmrc ./
 
-# Install dependencies with frozen lockfile for reproducible builds
-RUN --mount=type=cache,target=/root/.bun/install/cache \
-    bun install --no-save --frozen-lockfile
+# Install dependencies from the lockfile for reproducible builds
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --no-audit --no-fund
 
 # ============================================
 # Stage 2: Build the Next.js application
@@ -33,10 +30,6 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build-time env vars — override these with --build-arg or in compose.yml
-ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-ARG NEXT_PUBLIC_CLERK_SIGN_IN_URL=/auth/sign-in
-ARG NEXT_PUBLIC_CLERK_SIGN_UP_URL=/auth/sign-up
-ARG NEXT_PUBLIC_SENTRY_DISABLED=true
 
 ENV BUILD_STANDALONE=true
 

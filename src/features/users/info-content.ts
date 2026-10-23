@@ -1,40 +1,30 @@
 import type { InfobarContent } from '@/components/ui/infobar';
 
 export const usersInfoContent: InfobarContent = {
-  title: 'Users — React Query + nuqs Pattern',
+  title: 'Users — Manajemen Akun',
   sections: [
     {
-      title: 'Overview',
+      title: 'Siapa yang bisa mengakses',
       description:
-        'This page demonstrates client-side data fetching with React Query combined with nuqs URL search params — as an alternative to the Products page which uses server-side RSC fetching. Both patterns use the same DataTable, useDataTable hook, and nuqs URL state.',
-      links: [
-        {
-          title: 'TanStack Query SSR Docs',
-          url: 'https://tanstack.com/query/latest/docs/framework/react/guides/advanced-ssr'
-        }
-      ]
-    },
-    {
-      title: 'Server Prefetch + Client Hydration',
-      description:
-        'The server component reads search params via searchParamsCache, builds filters, and calls queryClient.prefetchQuery(). The dehydrated state is passed to HydrationBoundary so the client starts with cached data. The client component reads the same search params via useQueryState and calls useSuspenseQuery with matching filters.',
+        'Halaman ini hanya untuk role Admin. Akun hanya dibuat oleh admin; tidak ada pendaftaran mandiri.',
       links: []
     },
     {
-      title: 'URL State with nuqs',
+      title: 'Role',
       description:
-        'Pagination, search, and role filters are synced to the URL via nuqs. The useDataTable hook manages the TanStack Table state and debounces filter changes before updating the URL. When the URL changes, React Query automatically refetches because the query key includes the filters.',
-      links: [
-        {
-          title: 'nuqs Documentation',
-          url: 'https://nuqs.47ng.com'
-        }
-      ]
+        'Admin: kelola akun dan semua menu. Operator: input dan ubah data. Viewer: hanya melihat. Perubahan role berlaku pada request berikutnya pengguna tersebut.',
+      links: []
     },
     {
-      title: 'Products vs Users Pattern',
+      title: 'Password & keamanan',
       description:
-        'Products: searchParams → RSC fetch → pass data as props to client table. Users: searchParams → server prefetch → HydrationBoundary → client useSuspenseQuery. The Users pattern enables background refetching, cache sharing across components, and optimistic mutations.',
+        'Akun baru dan akun yang password-nya direset wajib mengganti password saat login. Reset password dan menonaktifkan akun langsung mengeluarkan pengguna dari semua perangkat. Login dikunci 15 menit setelah 5 kali salah password; reset password juga membuka kunci.',
+      links: []
+    },
+    {
+      title: 'Nonaktifkan, bukan hapus',
+      description:
+        'Akun tidak dihapus agar jejaknya tetap ada. Nonaktifkan akun untuk mencabut akses; aktifkan lagi kapan saja. Anda tidak dapat menonaktifkan atau mengubah role akun sendiri.',
       links: []
     }
   ]

@@ -22,6 +22,15 @@ const routeMapping: Record<string, BreadcrumbItem[]> = {
   // Add more custom mappings as needed
 };
 
+// Same idea for dynamic routes, matched by path prefix (the id segment is not a useful title)
+const routePrefixMapping: Record<string, BreadcrumbItem[]> = {
+  '/dashboard/engagement/slc/': [
+    { title: 'Dashboard', link: '/dashboard' },
+    { title: 'Engagement', link: '/dashboard/engagement' },
+    { title: 'Detail SLC', link: '' }
+  ]
+};
+
 export function useBreadcrumbs() {
   const pathname = usePathname();
 
@@ -29,6 +38,11 @@ export function useBreadcrumbs() {
     // Check if we have a custom mapping for this exact path
     if (routeMapping[pathname]) {
       return routeMapping[pathname];
+    }
+
+    const prefix = Object.keys(routePrefixMapping).find((key) => pathname.startsWith(key));
+    if (prefix) {
+      return routePrefixMapping[prefix];
     }
 
     // If no exact match, fall back to generating breadcrumbs from the path

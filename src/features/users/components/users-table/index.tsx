@@ -17,6 +17,7 @@ export function UsersTable() {
     perPage: parseAsInteger.withDefault(10),
     name: parseAsString,
     role: parseAsString,
+    status: parseAsString,
     sort: getSortingStateParser(columnIds).withDefault([])
   });
 
@@ -25,12 +26,13 @@ export function UsersTable() {
     limit: params.perPage,
     ...(params.name && { search: params.name }),
     ...(params.role && { roles: params.role }),
+    ...(params.status && { statuses: params.status }),
     ...(params.sort.length > 0 && { sort: JSON.stringify(params.sort) })
   };
 
   const { data } = useSuspenseQuery(usersQueryOptions(filters));
 
-  const pageCount = Math.ceil(data.total_users / params.perPage);
+  const pageCount = Math.ceil(data.total / params.perPage);
 
   const { table } = useDataTable({
     data: data.users,

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useIsClient } from '@/hooks/use-is-client';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { LoadingButton } from '@/components/ui/loading-button';
@@ -23,11 +23,7 @@ export function AlertModal({
   description = 'This action cannot be undone.',
   confirmLabel = 'Continue'
 }: AlertModalProps) {
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  const isMounted = useIsClient();
 
   if (!isMounted) {
     return null;

@@ -25,78 +25,6 @@ const ROOT = process.cwd();
 // Anchors that no longer match anything print a ⚠️ warning so doc drift
 // is loud instead of silent.
 const DOC_RULES = {
-  clerk: [
-    {
-      file: 'README.md',
-      lines: [
-        'Sponsored_by-Clerk',
-        'Auth, organizations, and billing function end-to-end.',
-        '- Auth - [Clerk](',
-        '- Authentication and user management through Clerk',
-        'using Clerk Organizations (create, switch',
-        'via Clerk Billing for B2B',
-        '- Client-side RBAC navigation that filters menu items',
-        '| [Signup / Signin](',
-        '| [Profile](',
-        '| [Workspaces](',
-        '| [Team Management](',
-        '| [Billing & Plans](',
-        '| [Exclusive Page](',
-        '── workspaces',
-        '── billing',
-        '── profile',
-        '── exclusive',
-        '── auth'
-      ],
-      blocks: [
-        { start: '##### Clerk setup', end: 'docs/clerk_setup.md).' },
-        { start: '**Can I use it without Clerk?**', end: 'wire in your own auth solution.' }
-      ]
-    },
-    {
-      file: 'AGENTS.md',
-      lines: [
-        '**Authentication**: Clerk',
-        '**Note**: Clerk supports "keyless mode"',
-        '- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`',
-        '- `CLERK_SECRET_KEY`',
-        '`img.clerk.com`',
-        '[Clerk Next.js SDK]',
-        '── workspaces',
-        '── billing',
-        '── profile',
-        '── exclusive',
-        '── auth',
-        '── clerk_setup',
-        '── nav-rbac',
-        '# Remove auth/org/billing'
-      ],
-      sections: [
-        '### Authentication & Authorization',
-        '## Authentication Patterns',
-        '### Client-Side Filtering',
-        '### Required for Authentication (Clerk)'
-      ],
-      blocks: [
-        { start: '**Clerk keyless mode popup**', end: 'claim application or set env variables' },
-        { start: '**Navigation items not showing**', end: 'org/permission/role' }
-      ]
-    },
-    { file: 'CLAUDE.md', lines: ['nav-rbac.md', 'clerk_setup.md'] },
-    {
-      file: 'env.example.txt',
-      envSections: [
-        'Authentication Configuration (Clerk)',
-        'Clerk Organizations Configuration',
-        'Clerk Webhooks'
-      ]
-    },
-    { file: 'Dockerfile', lines: ['ARG NEXT_PUBLIC_CLERK'] },
-    { file: 'Dockerfile.bun', lines: ['ARG NEXT_PUBLIC_CLERK'] },
-    { file: 'docs/deployment.md', lines: ['NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY', 'CLERK_SECRET_KEY'] },
-    { file: 'src/app/about/page.tsx', jsxSections: ['Authentication by Clerk'] },
-    { file: 'src/app/privacy-policy/page.tsx', jsxSections: ['Authentication by Clerk'] }
-  ],
   sentry: [
     {
       file: 'README.md',
@@ -116,7 +44,6 @@ const DOC_RULES = {
     },
     { file: 'env.example.txt', envSections: ['Error Tracking Configuration (Sentry)'] },
     { file: 'Dockerfile', lines: ['ARG NEXT_PUBLIC_SENTRY'] },
-    { file: 'Dockerfile.bun', lines: ['ARG NEXT_PUBLIC_SENTRY'] },
     { file: 'docs/deployment.md', lines: ['- `SENTRY_*` variables', 'Sentry source maps'] }
   ],
   kanban: [
@@ -155,42 +82,6 @@ const DOC_RULES = {
 // ─── Feature Configuration ──────────────────────────────────────────
 
 const FEATURES = {
-  clerk: {
-    name: 'Clerk (Authentication, Organizations, Billing)',
-    folders: [
-      'src/app/auth',
-      'src/app/dashboard/workspaces',
-      'src/app/dashboard/billing',
-      'src/app/dashboard/profile',
-      'src/app/dashboard/exclusive',
-      'src/features/auth',
-      'src/features/profile',
-      '.clerk'
-    ],
-    files: [
-      'docs/clerk_setup.md',
-      'docs/nav-rbac.md',
-      'src/components/org-switcher.tsx',
-      'src/components/user-avatar-profile.tsx'
-    ],
-    dependencies: ['@clerk/nextjs'],
-    envVars: [
-      'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY',
-      'CLERK_SECRET_KEY',
-      'NEXT_PUBLIC_CLERK_SIGN_IN_URL',
-      'NEXT_PUBLIC_CLERK_SIGN_UP_URL',
-      'NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL',
-      'NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL',
-      'WEBHOOK_SECRET'
-    ],
-    navItemsToRemove: [
-      '/dashboard/workspaces',
-      '/dashboard/workspaces/team',
-      '/dashboard/billing',
-      '/dashboard/profile',
-      '/dashboard/exclusive'
-    ]
-  },
   kanban: {
     name: 'Kanban (Drag & Drop task board)',
     folders: ['src/app/dashboard/kanban', 'src/features/kanban'],
@@ -361,19 +252,9 @@ class FeatureCleanup {
       this.cleanNavConfig(allNavItemsToRemove);
     }
 
-    // Runs after the loop so it also strips the Clerk hosts from a
-    // freshly-written sentry next.config.ts template (idempotent, so any
-    // feature order works). Checks package.json too, so a sentry run AFTER
-    // an earlier clerk removal doesn't re-add the hosts.
-    const pkgPath = path.join(ROOT, 'package.json');
-    const pkgNow = fs.existsSync(pkgPath)
-      ? JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
-      : null;
-    const clerkGone =
-      this.featuresToRemove.includes('clerk') || !pkgNow?.dependencies?.['@clerk/nextjs'];
-    if (clerkGone) {
-      this.cleanNextConfig();
-    }
+    // Clerk is no longer a removable feature, but a sentry next.config.ts template
+    // still lists its image hosts — strip them (idempotent)
+    this.cleanNextConfig();
 
     this.remapNotificationLinks(allNavItemsToRemove);
 
@@ -400,11 +281,11 @@ class FeatureCleanup {
       }
       console.log('\n✨ Cleanup complete!\n');
       console.log('📋 Next steps:');
-      console.log('  1. Run: bun install (or npm install) to sync dependencies');
+      console.log('  1. Run: npm install to sync dependencies');
       console.log('  2. Review and test your application');
       console.log('  3. To revert: git restore . (or git checkout .)');
       console.log('     Untracked files are not covered by git restore — modified env files');
-      console.log('     are backed up as *.cleanup-backup; .clerk/ regenerates on next dev run');
+      console.log('     are backed up as *.cleanup-backup');
       console.log('  4. Delete scripts/cleanup.js and scripts/cleanup-templates/ if no longer needed\n');
     }
   }
@@ -1131,7 +1012,7 @@ Usage:
   node scripts/cleanup.js --interactive
 
 Examples:
-  node scripts/cleanup.js clerk
+  node scripts/cleanup.js examples
   node scripts/cleanup.js kanban chat       # remove multiple at once
   node scripts/cleanup.js --interactive     # interactive mode
   node scripts/cleanup.js --dry-run kanban  # preview without changing files

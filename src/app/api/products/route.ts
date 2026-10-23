@@ -17,8 +17,12 @@
 
 import { fakeProducts } from '@/constants/mock-api';
 import { NextRequest, NextResponse } from 'next/server';
+import { guardRoute } from '@/lib/auth/dal';
 
 export async function GET(request: NextRequest) {
+  const denied = await guardRoute();
+  if (denied) return denied;
+
   const { searchParams } = request.nextUrl;
 
   const page = Number(searchParams.get('page') ?? 1);
@@ -39,6 +43,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const denied = await guardRoute('admin', 'operator');
+  if (denied) return denied;
+
   const body = await request.json();
   const data = await fakeProducts.createProduct(body);
   return NextResponse.json(data, { status: 201 });

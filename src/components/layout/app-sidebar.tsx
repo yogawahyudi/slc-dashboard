@@ -24,25 +24,37 @@ import {
   SidebarMenuSubItem,
   SidebarRail
 } from '@/components/ui/sidebar';
-import { UserAvatarProfile } from '@/components/user-avatar-profile';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { navGroups } from '@/config/nav-config';
+import { signOut } from '@/features/auth/actions';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import { useClerk, useOrganization, useUser } from '@clerk/nextjs';
 import { useFilteredNavGroups } from '@/hooks/use-nav';
+import { ROLE_LABELS } from '@/lib/auth/roles';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
-import { Icons } from '../icons';
-import { OrgSwitcher } from '../org-switcher';
+import { Icons } from '@/components/icons';
+import { useAuthDisabled, useCurrentUser } from './current-user-provider';
+
+function getInitials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+}
 
 export default function AppSidebar() {
   const pathname = usePathname();
   const { isOpen } = useMediaQuery();
-  const { user } = useUser();
-  const { organization } = useOrganization();
-  const { signOut } = useClerk();
   const router = useRouter();
+  const user = useCurrentUser();
+  const authDisabled = useAuthDisabled();
   const filteredGroups = useFilteredNavGroups(navGroups);
+  const [isSigningOut, startSignOut] = React.useTransition();
 
   React.useEffect(() => {
     // Side effects based on sidebar state changes
@@ -50,9 +62,7 @@ export default function AppSidebar() {
 
   return (
     <Sidebar collapsible='icon'>
-      <SidebarHeader className='group-data-[collapsible=icon]:pt-4'>
-        <OrgSwitcher />
-      </SidebarHeader>
+      <SidebarHeader />
       <SidebarContent className='overflow-x-hidden'>
         {filteredGroups.map((group) => (
           <SidebarGroup key={group.label || 'ungrouped'} className='py-0'>
@@ -123,7 +133,13 @@ export default function AppSidebar() {
                   />
                 }
               >
-                {user && <UserAvatarProfile className='h-8 w-8 rounded-lg' showInfo user={user} />}
+                <Avatar className='h-8 w-8 rounded-lg'>
+                  <AvatarFallback className='rounded-lg'>{getInitials(user.name)}</AvatarFallback>
+                </Avatar>
+                <div className='grid flex-1 text-left text-sm leading-tight'>
+                  <span className='truncate font-semibold'>{user.name}</span>
+                  <span className='text-muted-foreground truncate text-xs'>NRP {user.nrp}</span>
+                </div>
                 <Icons.chevronsDown className='ml-auto size-4' />
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -134,24 +150,22 @@ export default function AppSidebar() {
               >
                 <DropdownMenuGroup>
                   <DropdownMenuLabel className='p-0 font-normal'>
-                    <div className='px-1 py-1.5'>
-                      {user && (
-                        <UserAvatarProfile className='h-8 w-8 rounded-lg' showInfo user={user} />
+                    <div className='flex items-center justify-between gap-2 px-1 py-1.5 text-sm'>
+                      <span className='truncate'>{user.name}</span>
+                      {authDisabled ? (
+                        <Badge variant='destructive'>Login nonaktif</Badge>
+                      ) : (
+                        <Badge variant='secondary'>{ROLE_LABELS[user.role]}</Badge>
                       )}
                     </div>
                   </DropdownMenuLabel>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-
                 <DropdownMenuGroup>
-                  <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>
-                    <Icons.account className='mr-2 h-4 w-4' />
-                    Profile
-                  </DropdownMenuItem>
-                  {organization && (
-                    <DropdownMenuItem onClick={() => router.push('/dashboard/billing')}>
-                      <Icons.creditCard className='mr-2 h-4 w-4' />
-                      Billing
+                  {!authDisabled && (
+                    <DropdownMenuItem onClick={() => router.push('/auth/change-password')}>
+                      <Icons.lock className='mr-2 h-4 w-4' />
+                      Ganti password
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem onClick={() => router.push('/dashboard/notifications')}>
@@ -159,13 +173,24 @@ export default function AppSidebar() {
                     Notifications
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                  <DropdownMenuItem onClick={() => signOut({ redirectUrl: '/auth/sign-in' })}>
-                    <Icons.logout aria-hidden className='mr-2 h-4 w-4' />
-                    Sign out
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
+                {!authDisabled && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      disabled={isSigningOut}
+                      onClick={() =>
+                        startSignOut(async () => {
+                          await signOut();
+                          // Full page load so no cached data from this session survives
+                          window.location.assign('/auth/sign-in');
+                        })
+                      }
+                    >
+                      <Icons.logout className='mr-2 h-4 w-4' />
+                      Keluar
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>

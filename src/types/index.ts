@@ -1,11 +1,9 @@
 import { Icons } from '@/components/icons';
+import type { Role } from '@/lib/auth/roles';
 
-export interface PermissionCheck {
-  permission?: string;
-  plan?: string;
-  feature?: string;
-  role?: string;
-  requireOrg?: boolean;
+export interface NavAccess {
+  /** Only these roles see the item. Omit to show it to every signed-in user. */
+  roles?: Role[];
 }
 
 export interface NavItem {
@@ -19,7 +17,7 @@ export interface NavItem {
   description?: string;
   isActive?: boolean;
   items?: NavItem[];
-  access?: PermissionCheck;
+  access?: NavAccess;
 }
 
 export interface NavGroup {

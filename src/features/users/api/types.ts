@@ -1,28 +1,38 @@
-export type { User } from '@/constants/mock-api-users';
+import type { Role } from '@/lib/auth/roles';
+
+export const USER_STATUSES = ['active', 'inactive'] as const;
+
+export type UserStatus = (typeof USER_STATUSES)[number];
+
+export type User = {
+  id: string;
+  nrp: string;
+  name: string;
+  role: Role;
+  status: UserStatus;
+  mustChangePassword: boolean;
+  /** Sign-in is locked after too many failed attempts (evaluated when the list was fetched) */
+  isLocked: boolean;
+  lastLoginAt: string | null;
+  createdAt: string;
+};
 
 export type UserFilters = {
   page?: number;
   limit?: number;
-  roles?: string;
   search?: string;
+  /** Comma-separated roles, as written to the URL by the data table */
+  roles?: string;
+  /** Comma-separated statuses */
+  statuses?: string;
+  /** JSON `[{ id, desc }]` from the data table */
   sort?: string;
 };
 
 export type UsersResponse = {
-  success: boolean;
-  time: string;
-  message: string;
-  total_users: number;
-  offset: number;
-  limit: number;
-  users: import('@/constants/mock-api-users').User[];
+  users: User[];
+  total: number;
 };
 
-export type UserMutationPayload = {
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  role: string;
-  status: string;
-};
+// Errors are returned, not thrown: thrown Server Action messages are hidden in production
+export type MutationResult = { ok: true } | { ok: false; error: string };

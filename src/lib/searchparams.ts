@@ -12,7 +12,16 @@ export const searchParams = {
   gender: parseAsString,
   category: parseAsString,
   role: parseAsString,
-  sort: parseAsString
+  status: parseAsString,
+  sort: parseAsString,
+  // engagement page
+  unit: parseAsString,
+  platform: parseAsString,
+  post: parseAsString,
+  division: parseAsString,
+  // engagement SLC detail page (division above is reused as a multi-select list)
+  action: parseAsString,
+  satuan: parseAsString
   // advanced filter
   // filters: getFiltersStateParser().withDefault([]),
   // joinOperator: parseAsStringEnum(['and', 'or']).withDefault('and')

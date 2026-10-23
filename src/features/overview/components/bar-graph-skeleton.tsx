@@ -1,6 +1,9 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// Fixed bar heights (%) so server and client render the same skeleton
+const BAR_HEIGHTS = [45, 70, 35, 85, 55, 65, 40, 90, 50, 75, 30, 60];
+
 export function BarGraphSkeleton() {
   return (
     <Card>
@@ -13,14 +16,8 @@ export function BarGraphSkeleton() {
       </CardHeader>
       <CardContent>
         <div className='flex aspect-auto h-[280px] w-full items-end justify-around gap-2 pt-8'>
-          {Array.from({ length: 12 }).map((_, i) => (
-            <Skeleton
-              key={i}
-              className='w-full rounded-t-sm'
-              style={{
-                height: `${Math.max(20, Math.random() * 100)}%`
-              }}
-            />
+          {BAR_HEIGHTS.map((height, i) => (
+            <Skeleton key={i} className='w-full rounded-t-sm' style={{ height: `${height}%` }} />
           ))}
         </div>
       </CardContent>

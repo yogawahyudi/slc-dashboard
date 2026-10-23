@@ -13,11 +13,11 @@ import { useRouter } from 'next/navigation';
 const MAX_VISIBLE = 5;
 
 const actionRoutes: Record<string, string> = {
-  view: '/dashboard/workspaces',
+  view: '/dashboard/overview',
   'view-product': '/dashboard/product',
-  billing: '/dashboard/billing',
-  open: '/dashboard/kanban',
-  'open-chat': '/dashboard/chat'
+  billing: '/dashboard/overview',
+  open: '/dashboard/overview',
+  'open-chat': '/dashboard/overview'
 };
 
 export function NotificationCenter() {

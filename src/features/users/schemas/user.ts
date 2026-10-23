@@ -1,12 +1,41 @@
 import * as z from 'zod';
+import { newPasswordSchema, nrpSchema } from '@/features/auth/schemas';
+import { ROLES } from '@/lib/auth/roles';
+import { USER_STATUSES } from '../api/types';
 
-export const userSchema = z.object({
-  first_name: z.string().min(2, 'First name must be at least 2 characters'),
-  last_name: z.string().min(2, 'Last name must be at least 2 characters'),
-  email: z.string().email('Please enter a valid email'),
-  phone: z.string().min(1, 'Phone number is required'),
-  role: z.string().min(1, 'Please select a role'),
-  status: z.string().min(1, 'Please select a status')
+const nameSchema = z
+  .string()
+  .trim()
+  .min(3, { message: 'Nama minimal 3 karakter' })
+  .max(120, { message: 'Nama maksimal 120 karakter' });
+
+const roleSchema = z.enum(ROLES, { message: 'Pilih role' });
+
+export const createUserSchema = z.object({
+  nrp: nrpSchema,
+  name: nameSchema,
+  role: roleSchema,
+  password: newPasswordSchema
 });
 
-export type UserFormValues = z.infer<typeof userSchema>;
+export type CreateUserValues = z.infer<typeof createUserSchema>;
+
+export const updateUserSchema = z.object({
+  name: nameSchema,
+  role: roleSchema,
+  status: z.enum(USER_STATUSES, { message: 'Pilih status' })
+});
+
+export type UpdateUserValues = z.infer<typeof updateUserSchema>;
+
+export const resetPasswordSchema = z
+  .object({
+    password: newPasswordSchema,
+    confirmPassword: z.string()
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Konfirmasi password tidak cocok',
+    path: ['confirmPassword']
+  });
+
+export type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;

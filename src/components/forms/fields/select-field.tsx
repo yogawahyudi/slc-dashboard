@@ -16,10 +16,12 @@ export function SelectField({
   description,
   required,
   placeholder = 'Select',
-  options
+  options,
+  disabled
 }: BaseFieldProps & {
   placeholder?: string;
   options: { value: string; label: string; disabled?: boolean }[];
+  disabled?: boolean;
 }) {
   const field = useFieldContext<string>();
   const isInvalid = useFieldInvalid();
@@ -34,6 +36,9 @@ export function SelectField({
         name={field.name}
         value={field.state.value}
         onValueChange={(value) => field.handleChange(value ?? '')}
+        // Lets the trigger show the option label instead of the raw value
+        items={options}
+        disabled={disabled}
       >
         <SelectTrigger
           id={field.name}
