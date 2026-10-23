@@ -2,25 +2,24 @@
 
 import { createContext, useContext } from 'react';
 import type { CurrentUser } from '@/lib/auth/dal';
+import type { AuthMode } from '@/lib/auth/mode';
 
-type CurrentUserContextValue = { user: CurrentUser; authDisabled: boolean };
+type CurrentUserContextValue = { user: CurrentUser; authMode: AuthMode };
 
 const CurrentUserContext = createContext<CurrentUserContextValue | null>(null);
 
 export function CurrentUserProvider({
   user,
-  authDisabled = false,
+  authMode = 'database',
   children
 }: {
   user: CurrentUser;
-  /** True while AUTH_DISABLED=true (development only) */
-  authDisabled?: boolean;
+  /** Where accounts live: database, AUTH_USERS (env) or nowhere (AUTH_DISABLED, development only) */
+  authMode?: AuthMode;
   children: React.ReactNode;
 }) {
   return (
-    <CurrentUserContext.Provider value={{ user, authDisabled }}>
-      {children}
-    </CurrentUserContext.Provider>
+    <CurrentUserContext.Provider value={{ user, authMode }}>{children}</CurrentUserContext.Provider>
   );
 }
 
@@ -35,7 +34,7 @@ export function useCurrentUser() {
   return useCurrentUserContext().user;
 }
 
-/** Whether sign-in is switched off (AUTH_DISABLED=true in development). */
-export function useAuthDisabled() {
-  return useCurrentUserContext().authDisabled;
+/** How sign-in works: 'database', 'env' (AUTH_USERS) or 'disabled' (AUTH_DISABLED=true). */
+export function useAuthMode() {
+  return useCurrentUserContext().authMode;
 }

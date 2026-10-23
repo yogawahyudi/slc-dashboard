@@ -4,7 +4,15 @@ import { eq, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { getSession } from '@/lib/auth/dal';
-import { hashPassword, verifyDummyPassword, verifyPassword } from '@/lib/auth/password';
+import { createEnvSession, verifyEnvUserPassword } from '@/lib/auth/env-users';
+import { authMode } from '@/lib/auth/mode';
+import {
+  hashPassword,
+  LOCKOUT_MS,
+  MAX_FAILED_LOGINS,
+  verifyDummyPassword,
+  verifyPassword
+} from '@/lib/auth/password';
 import {
   createSession,
   deleteSessionCookie,
@@ -24,18 +32,28 @@ import {
 // Errors are returned, not thrown: thrown Server Action messages are hidden in production
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
-const MAX_FAILED_LOGINS = 5;
-const LOCKOUT_MS = 15 * 60 * 1000;
+type SignInResult = { ok: true; mustChangePassword: boolean } | { ok: false; error: string };
+
 // One message for unknown NRP, wrong password and locked account, so none can be told apart
 const SIGN_IN_FAILED =
   'NRP atau password salah, atau akun sedang dikunci sementara. Coba lagi dalam beberapa menit.';
 
-export async function signIn(
-  values: SignInValues
-): Promise<{ ok: true; mustChangePassword: boolean } | { ok: false; error: string }> {
+/** authMode 'env': accounts from AUTH_USERS, the session is a signed cookie (no database). */
+async function signInWithEnvUser(nrp: string, password: string): Promise<SignInResult> {
+  const user = verifyEnvUserPassword(nrp, password);
+  if (!user) return { ok: false, error: SIGN_IN_FAILED };
+
+  const { token, cookieExpiresAt } = createEnvSession(user);
+  await setSessionCookie(token, cookieExpiresAt);
+  return { ok: true, mustChangePassword: false };
+}
+
+export async function signIn(values: SignInValues): Promise<SignInResult> {
   const parsed = signInSchema.safeParse(values);
   if (!parsed.success) return { ok: false, error: SIGN_IN_FAILED };
   const { nrp, password } = parsed.data;
+
+  if (authMode === 'env') return signInWithEnvUser(nrp, password);
 
   const user = await db.query.users.findFirst({ where: eq(users.nrp, nrp) });
 
@@ -91,6 +109,10 @@ export async function signOut(): Promise<ActionResult> {
 }
 
 export async function changePassword(values: ChangePasswordValues): Promise<ActionResult> {
+  if (authMode === 'env') {
+    return { ok: false, error: 'Password akun diatur oleh admin lewat AUTH_USERS.' };
+  }
+
   const current = await getSession();
   if (!current) return { ok: false, error: 'Sesi berakhir. Silakan login kembali.' };
 

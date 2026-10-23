@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireUser } from '@/lib/auth/dal';
-import { isAuthDisabled } from '@/lib/auth/mode';
+import { authMode } from '@/lib/auth/mode';
 import { AuthShell } from '@/features/auth/components/auth-shell';
 import { ChangePasswordForm } from '@/features/auth/components/change-password-form';
 
@@ -11,8 +11,8 @@ export const metadata: Metadata = {
 };
 
 export default async function ChangePasswordPage() {
-  // No accounts (and no database) while sign-in is switched off
-  if (isAuthDisabled) redirect('/dashboard/overview');
+  // Passwords live in the database; AUTH_USERS passwords are set in the environment
+  if (authMode !== 'database') redirect('/dashboard/overview');
 
   const user = await requireUser({ allowPasswordChange: true });
 

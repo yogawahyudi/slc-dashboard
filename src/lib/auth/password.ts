@@ -1,6 +1,10 @@
 import 'server-only';
 import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 
+/** This many wrong passwords in a row lock sign-in for the account for LOCKOUT_MS. */
+export const MAX_FAILED_LOGINS = 5;
+export const LOCKOUT_MS = 15 * 60 * 1000;
+
 // Stored format: scrypt$N$r$p$<salt base64>$<hash base64>
 const N = 16384;
 const R = 8;

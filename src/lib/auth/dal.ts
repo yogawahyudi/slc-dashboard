@@ -2,7 +2,8 @@ import 'server-only';
 import { cache } from 'react';
 import { redirect } from 'next/navigation';
 import { NextResponse } from 'next/server';
-import { isAuthDisabled } from './mode';
+import { validateEnvSessionToken } from './env-users';
+import { authMode } from './mode';
 import { hasRole, type Role } from './roles';
 import { readSessionCookie, validateSessionToken } from './session';
 
@@ -27,20 +28,28 @@ const DEV_USER: CurrentUser = {
 
 let warnedAuthDisabled = false;
 
-/** Validated session + full user row. Server-only; never pass the result to the client. */
+/**
+ * Validated database session + full user row (null outside database mode).
+ * Server-only; never pass the result to the client.
+ */
 export const getSession = cache(async () => {
-  if (isAuthDisabled) return null;
+  if (authMode !== 'database') return null;
   const token = await readSessionCookie();
   return token ? validateSessionToken(token) : null;
 });
 
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
-  if (isAuthDisabled) {
+  if (authMode === 'disabled') {
     if (!warnedAuthDisabled) {
       warnedAuthDisabled = true;
       console.warn('[auth] AUTH_DISABLED=true: login dinonaktifkan, semua request sebagai admin');
     }
     return DEV_USER;
+  }
+
+  if (authMode === 'env') {
+    const token = await readSessionCookie();
+    return token ? validateEnvSessionToken(token) : null;
   }
 
   const current = await getSession();

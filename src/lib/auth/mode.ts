@@ -7,3 +7,16 @@
  */
 export const isAuthDisabled =
   process.env.AUTH_DISABLED === 'true' && process.env.NODE_ENV !== 'production';
+
+/**
+ * - `database`: accounts and sessions in PostgreSQL (default)
+ * - `env`: fixed accounts from AUTH_USERS and signed session cookies, no database (env-users.ts)
+ * - `disabled`: no sign-in at all (AUTH_DISABLED=true, development only)
+ */
+export type AuthMode = 'database' | 'env' | 'disabled';
+
+export const authMode: AuthMode = isAuthDisabled
+  ? 'disabled'
+  : process.env.AUTH_USERS?.trim()
+    ? 'env'
+    : 'database';

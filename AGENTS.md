@@ -282,6 +282,8 @@ Sessions: random token in the httpOnly `slc_session` cookie, only its SHA-256 ha
 
 No-database mode: `AUTH_DISABLED=true` in `.env.local` (`isAuthDisabled` in `src/lib/auth/mode.ts`) skips the proxy check and makes `getCurrentUser()` return a built-in admin `DEV_USER` without touching the database; the Users page shows a "needs a database" notice instead of the table. It only works in development — production builds always ignore it. Code that needs the database must not run in this mode.
 
+Env accounts mode: a non-empty `AUTH_USERS` (`"nrp:name:role:password;…"`) plus `AUTH_SECRET` (≥ 32 chars) gives a real sign-in without a database, in development and production (`src/lib/auth/env-users.ts`). The session is the `slc_session` cookie itself, HMAC-signed over the NRP, expiry and the account's password, so changing a password or removing an account in the env ends its sessions. There is no sliding idle timeout (cookies can't be rewritten during render), only the 12-hour absolute limit, and the five-wrong-passwords lockout is kept in memory per server instance. Passwords can't be changed from the app and the Users page shows a notice. `authMode` in `src/lib/auth/mode.ts` is `'disabled'` (wins in development), `'env'` or `'database'`; check it instead of `isAuthDisabled` when code needs the database (`authMode !== 'database'`). On the client, `useAuthMode()` from `current-user-provider.tsx`.
+
 Rules:
 
 - Never import `@/lib/db`, `@/lib/auth/session` or `@/lib/auth/dal` from client components (they're `server-only`). Client code may import `@/lib/auth/roles` and `import type` from the DAL.

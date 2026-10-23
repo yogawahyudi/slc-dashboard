@@ -35,7 +35,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Icons } from '@/components/icons';
-import { useAuthDisabled, useCurrentUser } from './current-user-provider';
+import { useAuthMode, useCurrentUser } from './current-user-provider';
 
 function getInitials(name: string) {
   return name
@@ -52,7 +52,8 @@ export default function AppSidebar() {
   const { isOpen } = useMediaQuery();
   const router = useRouter();
   const user = useCurrentUser();
-  const authDisabled = useAuthDisabled();
+  const authMode = useAuthMode();
+  const authDisabled = authMode === 'disabled';
   const filteredGroups = useFilteredNavGroups(navGroups);
   const [isSigningOut, startSignOut] = React.useTransition();
 
@@ -162,7 +163,8 @@ export default function AppSidebar() {
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  {!authDisabled && (
+                  {/* Only database accounts can change their own password */}
+                  {authMode === 'database' && (
                     <DropdownMenuItem onClick={() => router.push('/auth/change-password')}>
                       <Icons.lock className='mr-2 h-4 w-4' />
                       Ganti password

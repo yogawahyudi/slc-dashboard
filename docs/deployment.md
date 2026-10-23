@@ -2,7 +2,7 @@
 
 The starter deploys to Vercel out of the box, or anywhere Docker runs. `next.config.ts` sets `output: 'standalone'`, so production builds are optimized for self-hosting.
 
-Every deployment needs a PostgreSQL database. The build itself doesn't touch it; the running app and the `db:*` scripts do.
+Every deployment needs a PostgreSQL database, unless accounts come from `AUTH_USERS` (see below). The build itself doesn't touch it; the running app and the `db:*` scripts do.
 
 ## Vercel (Recommended)
 
@@ -18,6 +18,7 @@ For other platforms, see the [Next.js deployment docs](https://nextjs.org/docs/a
 Ensure these are set in your deployment platform:
 
 - `DATABASE_URL` — PostgreSQL connection string (runtime only; not needed by `npm run build`)
+- Or, without a database: `AUTH_USERS` (`"nrp:name:role:password;…"`) and `AUTH_SECRET` (at least 32 random characters). Sign-in then uses only these fixed accounts; edit the variable and redeploy to change them. Account management on the Users page and password changes are unavailable in this mode. Format details are in `env.example.txt`
 - `SESSION_COOKIE_SECURE` — leave empty. Session cookies are `Secure` in production, so the app must be served over HTTPS; set `false` only if it really runs on plain HTTP
 - All `NEXT_PUBLIC_*` variables for client-side access
 

@@ -6,7 +6,7 @@ import { InfoSidebar } from '@/components/layout/info-sidebar';
 import { InfobarProvider } from '@/components/ui/infobar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { requireUser } from '@/lib/auth/dal';
-import { isAuthDisabled } from '@/lib/auth/mode';
+import { authMode } from '@/lib/auth/mode';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 
@@ -27,7 +27,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get('sidebar_state')?.value === 'true';
   return (
-    <CurrentUserProvider user={user} authDisabled={isAuthDisabled}>
+    <CurrentUserProvider user={user} authMode={authMode}>
       <KBar>
         <SidebarProvider defaultOpen={defaultOpen}>
           <a

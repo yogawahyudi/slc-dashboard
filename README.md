@@ -160,6 +160,8 @@ More accounts are created by an admin on the Users page; there is no public sign
 
 > [!TIP]
 > No database yet? Put `AUTH_DISABLED=true` in `.env.local` and run `npm run dev`: sign-in is skipped and you're treated as an admin (account management stays unavailable). Production builds ignore this setting.
+>
+> Need real sign-in without a database (also in production)? Set `AUTH_USERS` and `AUTH_SECRET` instead — see `env.example.txt`.
 
 ##### Environment variables
 
